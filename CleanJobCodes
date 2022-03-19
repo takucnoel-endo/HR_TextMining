@@ -1,0 +1,201 @@
+################################################################################################################################################# 
+##################################################################### TU HR #####################################################################
+################################################################################################################################################# 
+
+#library essential packages
+library(readxl)
+library(dplyr)
+library(tidyverse)
+
+# read in all relevant files
+skills <- read_excel("Skills.xlsx")
+bright_jobs <- read_excel("Bright Outlook Jobs.xlsx", col_names=c("SOC Code","Occupation","Categories"), skip = 4)
+job_soc_codes <- read_excel("JobCode.xlsx")
+trinity_jobs <- read_excel("Parse_data.xlsx")
+
+
+########### CLEANING ############################################################################################################################ 
+
+#### Skills ####
+
+# rename columns in skills
+names(skills)[names(skills)=="O*NET-SOC Code"]<-"SOC Code"
+names(skills)[names(skills)=="Title"]<-"Occupation"
+names(skills)[names(skills)=="Element Name"]<-"Skill"
+
+
+# remove irrelevant columns (Element ID, Scale ID, N, Lower CI Bound, Upper CI Bound, Date, Domain Source)
+skills <- skills[,!names(skills) %in% c("Element ID","Scale ID","N","Lower CI Bound","Upper CI Bound","Date","Domain Source")]
+
+# using the information from O*Net, add a column with the categorized group for each skills
+skills$Group <- skills$Skill
+
+### basic skills
+skills$Group <- ifelse((str_detect(skills$Group,'Active Learning') | str_detect(skills$Group,'Active Listening') | 
+                          str_detect(skills$Group,'Critical Thinking') | str_detect(skills$Group,'Learning Strategies') | 
+                          str_detect(skills$Group,'Mathematics') | str_detect(skills$Group,'Monitoring') | 
+                          str_detect(skills$Group,'Reading Comprehension') | str_detect(skills$Group,'Science') | 
+                          str_detect(skills$Group,'Speaking') | str_detect(skills$Group,'Writing')),'Basic', skills$Group)
+### social skills
+skills$Group <- ifelse((str_detect(skills$Group,'Coordination') | str_detect(skills$Group,'Instructing') | 
+                          str_detect(skills$Group,'Negotiation') | str_detect(skills$Group,'Persuasion') | 
+                          str_detect(skills$Group,'Service Orientation') | str_detect(skills$Group,'Social Perceptiveness')),
+                       'Social',skills$Group)
+### complex problem solving skills
+skills$Group <- ifelse((str_detect(skills$Group,'Complex Problem Solving')),'Complex Problem Solving',skills$Group)
+### Technical Skills
+skills$Group <- ifelse((str_detect(skills$Group,'Equipment Maintenance') | str_detect(skills$Group,'Equipment Selection') | 
+                          str_detect(skills$Group,'Installation') | str_detect(skills$Group,'Operation and Control') | 
+                          str_detect(skills$Group,'Operations Analysis') | str_detect(skills$Group,'Operations Monitoring') | 
+                          str_detect(skills$Group,'Programming') | str_detect(skills$Group,'Quality Control Analysis') | 
+                          str_detect(skills$Group,'Repairing') | str_detect(skills$Group,'Technology Design') | 
+                          str_detect(skills$Group,'Troubleshooting')),'Technical',skills$Group)
+### systems skills
+skills$Group <- ifelse((str_detect(skills$Group,'Judgment and Decision Making') | str_detect(skills$Group,'Systems Analysis') | 
+                          str_detect(skills$Group,'Systems Evaluation')),'Systems',skills$Group)
+### resource management skills
+skills$Group <- ifelse((str_detect(skills$Group,'Management of Financial Resources') | 
+                          str_detect(skills$Group,'Management of Material Resources') | 
+                          str_detect(skills$Group,'Management of Personnel Resources') | 
+                          str_detect(skills$Group,'Time Management')),'Resource Management',skills$Group)
+### factor the group column
+skills$Group <- as.factor(skills$Group)
+
+
+#### Bright_Jobs ####
+
+table(bright_jobs$Categories)
+
+### rename levels in Categories column
+bright_jobs$Categories <- ifelse(bright_jobs$Categories == 'Rapid Growth; Numerous Job Openings', 'Growth and Openings', bright_jobs$Categories)
+
+
+#### Bright_Skills ####
+
+#join bright_jobs & skills data frames to create a dataframe with information on only bright outlook jobs
+bright_skills <- inner_join(skills, bright_jobs, by = c("SOC Code","Occupation"))
+
+# transform columns into correct data types
+bright_skills$Occupation <- factor(bright_skills$Occupation)
+bright_skills$Skill <- factor(bright_skills$Skill)
+bright_skills$`Scale Name` <- factor(bright_skills$`Scale Name`)
+bright_skills$`Data Value` <- as.numeric(bright_skills$`Data Value`)
+bright_skills$`Standard Error` <- as.numeric(bright_skills$`Standard Error`)
+bright_skills$`Recommend Suppress` <- factor(bright_skills$`Recommend Suppress`)
+bright_skills$`Not Relevant` <- factor(bright_skills$`Not Relevant`)
+bright_skills$Occupation <- factor(bright_skills$Occupation)
+bright_skills$Categories <- factor(bright_skills$Categories)
+
+
+
+#### Trinity_Jobs ####
+
+# remove irrelevant columns (Element ID, Scale ID, N, Lower CI Bound, Upper CI Bound, Date, Domain Source)
+trinity_jobs <- trinity_jobs[,!names(trinity_jobs) %in% c("CLASSIFICATION","REPORTSTO","PREPAREDDATE","OTHERREQUIREMENTS","SUPERVISORYRESPONSIBILITIES",
+                                                          "NUMBEROFDIRECTREPORTS","NUMBEROFINDIRECTREPORTS","SUPERVISIONRECEIVED","SECURITYSENSITIVE",
+                                                          "ATTENDANCESTANDARD","INTERNALCONTROLS","DECISIONMAKING","PHYSICALREQUIREMENTS","FINANCIALRESPONSIBILITY",)]
+# remove all other columns from job_soc_codes besides the Trinty Job Code & SOC Code columns
+job_soc_codes <- subset(job_soc_codes,select=c(`Trinity Job Code`,`Job Classification (required)`)) 
+
+# rename the columns to better identify their data & to match their name to the corresponding column in the trinity_jobs dataframe
+names(job_soc_codes) <- c("JOBCODE","SOC Code")
+
+# join the trinity_jobs & job_soc_codes dataframes to include the corresponding SOC Code in the trinity_jobs dataframe
+trinity_jobs <- inner_join(trinity_jobs,job_soc_codes,by="JOBCODE")
+
+# join trinity_jobs & bright_jobs dataframes to create a dataframe with information on Trinity occupations that correlate to bright outlook jobs
+bright_trinity <- inner_join(skills,bright_jobs,by=c("SOC Code"))
+
+#remove the duplicate Occupation column & rename the remaining one
+bright_trinity <- bright_trinity[,!(names(bright_trinity) %in% c("Occupation.y"))]
+names(bright_trinity)[names(bright_trinity)=="Occupation.x"]<-"Occupation"
+
+# transform columns into correct data types
+bright_trinity$Occupation <- factor(bright_trinity$Occupation)
+bright_trinity$Skill <- factor(bright_trinity$Skill)
+bright_trinity$`Scale Name` <- factor(bright_trinity$`Scale Name`)
+bright_trinity$`Data Value` <- as.numeric(bright_trinity$`Data Value`)
+bright_trinity$`Standard Error` <- as.numeric(bright_trinity$`Standard Error`)
+bright_trinity$`Recommend Suppress` <- factor(bright_trinity$`Recommend Suppress`)
+bright_trinity$`Not Relevant` <- factor(bright_trinity$`Not Relevant`)
+bright_trinity$Group <- factor(bright_trinity$Group)
+bright_trinity$Categories <- factor(bright_trinity$Categories)
+
+
+#Cleaning Trinity_Jobs
+
+colnames(trinity_jobs)[which(names(trinity_jobs) ==
+                               r"{\T\TSUMMARY}")] <- "SUMMARY"
+
+trinity_jobs$POSITION<-gsub(r"{\xe2\x80\x99s}", "s", trinity_jobs$POSITION,fixed = TRUE)
+trinity_jobs$POSITION<-gsub(r"{\xe2\x80\x93}", "s", trinity_jobs$POSITION,fixed = TRUE)
+trinity_jobs$INTERACTION<-gsub(r"{\xe2\x80\x93}", "s", trinity_jobs$INTERACTION,fixed = TRUE)
+trinity_jobs$REPORTSTO<-gsub(r"{\xe2\x80\x99s}", "s", trinity_jobs$REPORTSTO,fixed = TRUE)
+trinity_jobs$POSITION<-gsub(r"{\xe2\x80\x99s}", "s", trinity_jobs$POSITION,fixed = TRUE)
+trinity_jobs$SUMMARY<-gsub(r"{\xe2\x80\x99s}", "s", trinity_jobs$SUMMARY,fixed = TRUE)
+trinity_jobs$SUMMARY<-gsub(r"{\t}", "", trinity_jobs$SUMMARY,fixed = TRUE)
+trinity_jobs$ADDITIONALDUTIES<-gsub(r"{\xe2\x80\x99}", "", trinity_jobs$ADDITIONALDUTIES,fixed = TRUE)
+trinity_jobs$ADDITIONALDUTIES<-gsub(r"{\xe2\x80\x9}", "", trinity_jobs$ADDITIONALDUTIES,fixed = TRUE)
+trinity_jobs$EDUCATION<-gsub(r"{\xe2\x80\x99}", "", trinity_jobs$EDUCATION,fixed = TRUE)
+trinity_jobs$EDUCATION<-gsub(r"{\xe2\x80\x99}", "", trinity_jobs$EDUCATION,fixed = TRUE)
+trinity_jobs$EXPERIENCE<-gsub(r"{\xe2\x80\x99}", "", trinity_jobs$EXPERIENCE,fixed = TRUE)
+trinity_jobs$INTERACTION<-gsub(r"{\xe2\x80\x99}", "", trinity_jobs$INTERACTION,fixed = TRUE)
+trinity_jobs$NUMBEROFDIRECTREPORTS<-gsub(r"{\xe2\x80\x93}", "-", trinity_jobs$NUMBEROFDIRECTREPORTS,fixed = TRUE)
+trinity_jobs$PHYSICALREQUIREMENTS<-gsub(r"{\t}", "", trinity_jobs$PHYSICALREQUIREMENTS,fixed = TRUE)
+trinity_jobs$EQUIPMENT<-gsub(r"{\n}", "", trinity_jobs$EQUIPMENT,fixed = TRUE)
+
+########### ANALYSIS ############################################################################################################################ 
+
+# each occupation contains 2 rows for each skillseach representing the scale name Importance or Level & each with a corresponding data value
+## Importance: 1-5 scale (Not Important - Extremely Important)
+# the degree of importance the skill is to the occupation
+## Level: 0-7 scale
+# the degree to which the skills is required or needed to perform the occupation
+
+# we have chosen to qualify skills as bright outlook only if they contain an Importance & Level value of >3
+
+#### Importance ####
+importance <- bright_skills %>%
+  filter((`Scale Name`=='Importance' & `Data Value`>3)) %>%
+  select(Occupation,Skill,Group,`Data Value`) %>%
+  group_by(Occupation)
+
+# importance skill 
+importance_skill <- importance %>%
+  select(Skill, Occupation) %>%
+  group_by(Skill) %>%
+  summarize(n=n()) %>%
+  mutate(frequency=round((n/sum(n)*100),2)) %>%
+  arrange(desc(frequency))
+
+# importance group   
+importance_group <- importance %>%
+  group_by(Group) %>%
+  summarize(n=n()) %>%
+  mutate(frequency=round((n/sum(n)*100),2)) %>%
+  arrange(desc(frequency))
+
+#### Level ####
+level <- bright_skills %>%
+  filter((`Scale Name`=='Level' & `Data Value`>3)) %>%
+  select(Occupation,Skill,Group,`Data Value`) %>%
+  group_by(Occupation)
+
+# level skill 
+level_skill <- level %>%
+  select(Skill, Occupation) %>%
+  group_by(Skill) %>%
+  summarize(n=n()) %>%
+  mutate(frequency=round((n/sum(n)*100),2)) %>%
+  arrange(desc(frequency))
+
+# level group   
+level_group <- level %>%
+  group_by(Group) %>%
+  summarize(n=n()) %>%
+  mutate(frequency=round((n/sum(n)*100),2)) %>%
+  arrange(desc(frequency))
+
+
+
+#### ####
