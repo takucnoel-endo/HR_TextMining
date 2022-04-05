@@ -87,7 +87,7 @@ parse_list = ['position', 'department', 'paygrade', 'jobcode', 'classification',
               'jobduties', 'additionalduties','experience', '\\t\\tsummary', 'education', 'numberofdirectreports',
               'numberofindirectreports', 'supervisionreceived','securitysensitive','attendancestandard','internalcontrols',
               'decisionmaking','budgetresponsibility', 'financialresponsibility', 'physicalrequirements','environmentalconditions'
-              'knowledge,skills,andabilities','licesnses/certifications','otherrequirements',
+              'knowledge,skills,and abilities','licesnses/certifications','otherrequirements',
               'supervisoryresponsibilities','interaction','computersoftware','equipment','chemicalexposure']
 #Parse the text information in the corpus and create a dictionary.
 doc_list = []
