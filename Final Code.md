@@ -346,3 +346,164 @@ write_xlsx(SkillFrequency,
            '/Users/takucnoelendo/Documents/SP 2022/Consulting/HR Project/Deliverables:Results/Skills_Frequency.xlsx')
 
 ```
+
+
+```r
+########### CLEANING ############################################################################################################################ 
+
+######## Skills ########
+
+# rename columns in skills
+names(skills)[names(skills)=="O*NET-SOC Code"]="SOC Code"
+names(skills)[names(skills)=="Title"]="Occupation"
+names(skills)[names(skills)=="Element Name"]="Skill"
+
+# remove irrelevant columns (Element ID, Scale ID, N, Lower CI Bound, Upper CI Bound, Date, Domain Source)
+skills = skills[,!names(skills) %in% c("Element ID","Scale ID","Standard Error","N","Lower CI Bound","Upper CI Bound","Date","Domain Source")]
+
+# using the information from O*Net, add a column with the categorized group for each skills
+skills$Group = skills$Skill
+
+### Basic Skills
+skills$Group = ifelse((str_detect(skills$Group,'Active Learning') | str_detect(skills$Group,'Active Listening') | 
+                          str_detect(skills$Group,'Critical Thinking') | str_detect(skills$Group,'Learning Strategies') | 
+                          str_detect(skills$Group,'Mathematics') | str_detect(skills$Group,'Monitoring') | 
+                          str_detect(skills$Group,'Reading Comprehension') | str_detect(skills$Group,'Science') | 
+                          str_detect(skills$Group,'Speaking') | str_detect(skills$Group,'Writing')),'Basic', skills$Group)
+### Social Skills
+skills$Group = ifelse((str_detect(skills$Group,'Coordination') | str_detect(skills$Group,'Instructing') | 
+                          str_detect(skills$Group,'Negotiation') | str_detect(skills$Group,'Persuasion') | 
+                          str_detect(skills$Group,'Service Orientation') | str_detect(skills$Group,'Social Perceptiveness')),
+                       'Social',skills$Group)
+### Complex Problem Solving Skills
+skills$Group = ifelse((str_detect(skills$Group,'Complex Problem Solving')),'Complex Problem Solving',skills$Group)
+### Technical Skills
+skills$Group = ifelse((str_detect(skills$Group,'Equipment Maintenance') | str_detect(skills$Group,'Equipment Selection') | 
+                          str_detect(skills$Group,'Installation') | str_detect(skills$Group,'Operation and Control') | 
+                          str_detect(skills$Group,'Operations Analysis') | str_detect(skills$Group,'Operations Monitoring') | 
+                          str_detect(skills$Group,'Programming') | str_detect(skills$Group,'Quality Control Analysis') | 
+                          str_detect(skills$Group,'Repairing') | str_detect(skills$Group,'Technology Design') | 
+                          str_detect(skills$Group,'Troubleshooting')),'Technical',skills$Group)
+### Systems Skills
+skills$Group = ifelse((str_detect(skills$Group,'Judgment and Decision Making') | str_detect(skills$Group,'Systems Analysis') | 
+                          str_detect(skills$Group,'Systems Evaluation')),'Systems',skills$Group)
+### Resource Management Skills
+skills$Group = ifelse((str_detect(skills$Group,'Management of Financial Resources') | 
+                          str_detect(skills$Group,'Management of Material Resources') | 
+                          str_detect(skills$Group,'Management of Personnel Resources') | 
+                          str_detect(skills$Group,'Time Management')),'Resource Management',skills$Group)
+### factor the group column
+skills$Group = as.factor(skills$Group)
+
+
+# create vectors containing the data values for Importance & Level respectively
+ImportanceDV = skills%>%
+  filter(`Scale Name`=="Importance")%>%
+  transmute(ImportanceDV=`Data Value`)
+
+LevelDV = skills%>%
+  filter(`Scale Name`=="Level")%>%
+  transmute(LevelDV=`Data Value`)
+
+# delete 1 row for each skill in the dataframe
+skills = skills[seq(0,nrow(skills),2),]
+
+# delete the Scale Name & Data Value colummns
+skills = skills[,!names(skills) %in% c("Scale Name","Data Value")]
+
+# add in the new Importance Data Value & Level Data Value columns
+skills = add_column(skills,ImportanceDV,.after="Skill")
+skills = add_column(skills,LevelDV,.after="ImportanceDV")
+
+
+######## Bright_Jobs ########
+### rename level in Categories column
+bright_jobs$Categories = ifelse(bright_jobs$Categories == 'Rapid Growth; Numerous Job Openings', 'Growth and Openings', bright_jobs$Categories)
+
+
+
+######## Bright_Skills ########
+#join bright_jobs & skills data frames to create a dataframe with information on only bright outlook jobs
+bright_skills = inner_join(skills, bright_jobs, by = c("SOC Code","Occupation"))
+# transform columns into correct data types
+bright_skills$Occupation = factor(bright_skills$Occupation)
+bright_skills$Skill = factor(bright_skills$Skill)
+bright_skills$ImportanceDV = as.numeric(bright_skills$ImportanceDV)
+bright_skills$LevelDV = as.numeric(bright_skills$LevelDV)
+bright_skills$`Recommend Suppress` = factor(bright_skills$`Recommend Suppress`)
+bright_skills$`Not Relevant` = factor(bright_skills$`Not Relevant`)
+bright_skills$Occupation = factor(bright_skills$Occupation)
+bright_skills$Categories = factor(bright_skills$Categories)
+# create a threshold for Importance & Level
+# Importance = 2.5
+# Level = 3.5
+bright_skills = bright_skills %>% filter(ImportanceDV>=2.5 & LevelDV>=3.5)
+
+
+######## Trinity_Jobs ########
+# remove irrelevant columns (Element ID, Scale ID, N, Lower CI Bound, Upper CI Bound, Date, Domain Source)
+trinity_jobs = data[,!names(data) %in% c("CLASSIFICATION","REPORTSTO","PREPAREDDATE","OTHERREQUIREMENTS","SUPERVISORYRESPONSIBILITIES",
+                                         "NUMBEROFDIRECTREPORTS","NUMBEROFINDIRECTREPORTS","SUPERVISIONRECEIVED","SECURITYSENSITIVE",
+                                         "ATTENDANCESTANDARD","INTERNALCONTROLS","DECISIONMAKING","BUDGETRESPONSIBILITY","FINANCIALRESPONSIBILITY",
+                                          'PHYSICALREQUIREMENTS')]
+#fix column names
+colnames(job_soc_codes)[which(names(job_soc_codes)=='Job Classification 2 (required:  IPEDS/SOC)')] = "SOC Code"
+colnames(job_soc_codes)[which(names(job_soc_codes)=='Job Code')] = "JOBCODE"
+#remove all other columns from job_soc_codes besides the Trinity Job Code & SOC Code columns
+job_soc_codes = subset(job_soc_codes,select=c(JOBCODE, `SOC Code`)) 
+#remove any jobs that don't have a corresponding SOC code (per TU HR's recommendation)
+job_soc_codes = job_soc_codes %>% filter(is.na(`SOC Code`)==FALSE)
+# remove the decimal values from JOBCODE
+job_soc_codes$JOBCODE = substr(job_soc_codes$JOBCODE,1,nchar(job_soc_codes$JOBCODE)-2)
+# join the trinity_jobs & job_soc_codes dataframes to include the corresponding SOC Code in the trinity_jobs dataframe
+trinity_jobs = left_join(trinity_jobs,job_soc_codes,by="JOBCODE")
+trinity_jobs = trinity_jobs %>% filter(is.na(`SOC Code`)==FALSE)
+trinity_jobs = unique(trinity_jobs)
+# filter for only trinity jobs that correspond to a bright outlook occupation
+trinity_jobs = inner_join(trinity_jobs,bright_jobs,by="SOC Code")
+
+
+
+
+
+####Creating Final Skill Frequency#####
+#Update the value name so that they are the same when matched.
+bright_skills$Skill=revalue(bright_skills$Skill,c("Judgment and Decision Making"="Judgement and Decision Making"))
+#Udate column names.
+names(bright_skills)[names(bright_skills)=="SOC Code"]="SOC.Code"
+names(trinity_jobs)[names(trinity_jobs)=="JOBCODE"]="JobCode"
+
+#Joined dataset from the skill frequency and the subset columns of the trinity jobs.
+SkillsFreq_Prelim = unique(inner_join(SkillFrequency,subset(trinity_jobs,select=c("JobCode","SOC Code","POSITION")),by="JobCode"))
+#Filter the Skill Frequency by no missing values.
+SkillsFreq_Prelim%>%
+  filter(is.na(`SOC Code`)==FALSE)
+
+#Initlailze soc codes vector to loop.
+soc_codes=as.vector(unique(trinity_jobs$`SOC Code`))
+#Initialize empty dataset for frequency storage.
+final=data.frame(matrix(ncol=39,nrow=0))
+colnames(final)=colnames(SkillFrequency)
+#For loop
+for(soc in soc_codes){
+  #Filter bright skills dataset for current soc code
+  SOCSkills=bright_skills%>%
+    dplyr::select(SOC.Code,Skill)%>%
+    filter(SOC.Code==soc)
+  #Filter preliminary skills frequency dataset for current soc code
+  SOCSkillFreq=SkillsFreq_Prelim%>%
+    filter(`SOC Code`==soc)
+  #Get the difference between the column names of the preliminary skills frequency and the bright skills.
+  diff=setdiff(colnames(SkillsFreq_Prelim),as.vector(SOCSkills$Skill))
+  diff=diff[!diff %in% c("JobCode","POSITION","Department","SOC Code")]
+  #If the data are in the difference columns, assign -1 to denote irrelevant skills for that soc code.
+  SOCSkillFreq[,diff] = -1
+  #combine into final dataset.
+  final=rbind(final,SOCSkillFreq)
+}
+#Export final skill frequency dataset.
+write_xlsx(final, 
+           '/Users/takucnoelendo/Documents/SP 2022/Consulting/HR Project/Deliverables:Results/Skills_Frequency_Final.xlsx')
+
+
+```
