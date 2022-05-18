@@ -1,14 +1,18 @@
 ## Project Overview
-This project was a capstone project for my bachelors of science degree in Business Analytics & Technology at Trinity University. On this project, my project team and I worked with the university human resources department to run a text analysis on job descriptions currently available at the university. More specifically, one of the research question was to find out what kinds of skills are hidden in the job documents and what are the missing skills which are important for specific occupations. 
+On this project, the team worked with the university human resources department to run a text analysis on job descriptions currently available at the university. More specifically, there were two research questions. 
 
-Here I will present the script for this project which includes text standardization, analysis, and skills extraction. For this project, I used R to extract skills from job descriptions as it provides with extensive and useful libaries for text analysis.
+
+1. What skills are currently included in Trinity staff job descriptions?
+2. What skillsets are included in O*NET bright outlook occupations and which of those skills are currently included in Trinity staff job descriptions?
+
+Here we will present the script for this project which includes text standardization, analysis, and skills extraction and deliverable generation. For this project, we used R programming lanuguage as it provides with extensive and useful libaries for text analysis.
 
 ## Data Overview
-The data I used in this project was a pre-parsed dataset that includes subheaders of a job descriptions as columns and rows as each indivisual document. Prior to this script, I used python to parse job documents into datasets. The details about how I parsed the job postings and created the dataset is documented in another page - [Job Description Parsing Algorithm](https://github.com/takucnoel-endo/Code-Samples/blob/main/Job%20Description%20Parsing.md). Diagram below is the structure of the dataset that I used for this project.
+The data we used in this project was a pre-parsed dataset that includes subheaders of a job descriptions as columns and rows as each indivisual document. Prior to this script, we used python to parse job documents into datasets. The details about how we parsed the job postings and created the dataset is documented in another page - [Job Description Parsing Algorithm](https://github.com/takucnoel-endo/Code-Samples/blob/main/Job%20Description%20Parsing.md). Diagram below is the structure of the dataset that we used for this project.
 
 ![Parsed Text Dataset](https://github.com/takucnoel-endo/Images/blob/HR-Text-Mining/Screen%20Shot%202022-04-18%20at%206.24.01%20PM.png)
 ## Installing Packages & Importing Libraries
-First I imported all of the nessesary libearies to get started with this project.
+First we imported all of the nessesary libearies to get started with this project.
 ```r
 #Install required package if not found.
 if (!require("readxl")) install.packages("readxl")
