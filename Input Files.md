@@ -40,3 +40,7 @@ def DocToCorpus(indir):
 #Access each files in directory and create a corpus.
 corpus=DocToCorpus(indir='[input directory]/*.docx')
 ```
+## Text Analysis, Standardization, and Deliverable Generation (R Script)
+### 1. Parsed Data.xlsx
+
+
