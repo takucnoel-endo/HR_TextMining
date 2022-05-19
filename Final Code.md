@@ -173,7 +173,7 @@ data$doc_id <- seq(nrow(data))
 ```
 ### Data Ceaning
 #### Columns
-First, I worked with the columns of the raw data. Here, I renamed a column and removed columns that are unnessesary for this analyis. The unnessesary columns were determined by its nature of repetitiveness and by its lack of information that it provides to the analysis itself. For example, columns such as `COMPUTER SOFTWARE` was removed, because for most jobs, it contains only Microsoft products. Finally I renamed the analysis text to `text`.
+First, we worked with the columns of the raw data. Here, we renamed a column and removed columns that are unnessesary for this analyis. The unnessesary columns were determined by its nature of repetitiveness and by its lack of information that it provides to the analysis itself. For example, columns such as `COMPUTER SOFTWARE` was removed, because for most jobs, it contains only Microsoft products. Finally we renamed the analysis text to `text`.
 ```r
 #Rename summary columns name.
 #Use raw string.
@@ -220,7 +220,7 @@ data$JOBFAMILY<-gsub("REPORTS TO.*", "", data$JOBFAMILY)
 
 ### Corpus Preparation and Pre-processing
 #### Volatile Corpus
-After cleaning and text wrangling has been completed, I created a sourced object of the cleaned dataset and transformed the source obeject into a volatile corpus using `tm` package available in R. Turning the dataset into corpus using `tm` library allows for usage of extensive pre-processing and analysis functions provided by `tm` library, which is shown in the next section.
+After cleaning and text wrangling has been completed, we created a sourced object of the cleaned dataset and transformed the source obeject into a volatile corpus using `tm` package available in R. Turning the dataset into corpus using `tm` library allows for usage of extensive pre-processing and analysis functions provided by `tm` library, which is shown in the next section.
 ```r
 #In R, you can specify that a data text is a corpus type, so tm package can recognize it.
 #Change the prepared data to corpus, for further preprocessing (Stop words, stemming ... etc)
@@ -230,7 +230,7 @@ data_source <- DataframeSource(data)
 corpus <- VCorpus(data_source)
 ```
 #### Corpus Pre-processing
-Here, I performed corpus preprocessing by using the `standardize` function I defined above. A list of additional stopwords I defined were also read in from excel file stored in my local drive. As described in the function description, the function turns every term into lower case, removes numbers, removes punctuations, removes white spaces, and removes stop words. This function can also perform lemmatization of terms in corpus with user defined parameter. Returns a corpus with all specified text standardization applied.
+Here, we performed corpus preprocessing by using the `standardize` function I defined above. A list of additional stopwords I defined were also read in from excel file stored in my local drive. As described in the function description, the function turns every term into lower case, removes numbers, removes punctuations, removes white spaces, and removes stop words. This function can also perform lemmatization of terms in corpus with user defined parameter. Returns a corpus with all specified text standardization applied.
 ```r
 #Standardization
 #Import dictionary of stop words from a file.
