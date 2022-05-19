@@ -240,6 +240,7 @@ corpus <- standardize(corpus, lemmatize=TRUE, stop_w)
 ```
 
 ### Exploratory Analysis
+Once preprocessing is done, we performed sequences of exploratory text analysis. We first explored top n most appeared terms in the corpus for all n-grams. Next, we used topic modeling technique to explore topics in corpus and its related keywords.
 #### Unigrams
 ```r
 #Exploration
@@ -307,6 +308,7 @@ print(terms(tm_model.1, 10))
 ```
 
 ### Extracting Skills
+Here, we answer our first research question: What skills are currently included in Trinity staff job descriptions? This question is answered by using predefined function `Match_skills` explained ealier in this document. 
 ```r
 #Perform synonym mathing to the 35 skills
 syn = read_csv('/Users/takucnoelendo/Documents/SP 2022/Consulting/HR Project/Data/Synonyms - Sheet1.csv')
